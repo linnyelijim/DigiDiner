@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Order Queue</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <style>
+        .order-queue {
+            margin-top: 20px;
+        }
+
+        .order-item {
+            margin-bottom: 10px;
+        }
+
+        .item-info {
+            list-style-type: none;
+        }
+
+        .mark-ready-btn {
+            margin-left: 10px;
+        }
+    </style>
+    <%- include('partials/session') %>
+</head>
+
+<body>
+    <header>
+        <%- include('partials/head') %>
+    </header>
+    <main>
+        <div class="container">
+            <h1>Restaurant Order Queue</h1>
+            <div id="order-queue" class="order-queue">
+                <% if (orderQueue.length > 0) { %>
+                    <% orderQueue.forEach(function(order) { %>
+                        <div class="order-item" data-order-id="<%= order.id %>">
+                            <h4>Order for Table <%= order.tableId %></h4>
+                            <ul class="item-info">
+                                <% if (order.items && Array.isArray(order.items)) { %>
+                                    <% order.items.forEach(function(item) { %>
+                                        <li>
+                                            <p><%= (item.count > 1 ? item.count + 'x ' : '') + menuItems[item.itemId].name %></p>
+                                            <% if (item.options?.length) { %>
+                                                <p>&nbsp; - Options: <%= Object.keys(item.options).map((optionId) => menuOptions[optionId] + ': ' + item.options[optionId]).join(', ') %></p>
+                                            <% } %>
+                                            <% if (item.allergies) { %>
+                                                <p>&nbsp; - Allergies: <%= item.allergies %></p>
+                                            <% } %>
+                                            <% if (item.request) { %>
+                                                <p>&nbsp; - Special Request: <%= item.request %></p>
+                                            <% } %>
+                                        </li>
+                                    <% }) %>
+                                <% } else { %>
+                                    <li>No items in the order.</li>
+                                <% } %>
+                            </ul>
+                            <button class="btn btn-danger btn-sm mark-ready-btn">
+                                Clear Order
+                            </button>
+                        </div>
+                    <% }) %>
+                <% } else { %>
+                    <p>No orders in the queue.</p>
+                <% } %>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <%- include('partials/footer')%>
+    </footer>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script data-menu-items="<%= JSON.stringify(menuItems) %>" data-menu-options="<%= JSON.stringify(menuOptions) %>">
+        const menuItems = JSON.parse(document.currentScript.dataset.menuItems);
+
+        const orderQueue = document.getElementById('order-queue');
+        let orderElements = Object.fromEntries(Array.from(orderQueue.querySelectorAll('.order-item')).map(orderElement => [orderElement.getAttribute('data-order-id'), orderElement]));
+
+        async function clearOrder(orderId) {
+            try {
+                const response = await fetch('/api/kitchen/order/ready', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ orderId: orderId })
+                });
+                if (response.ok) {
+                    orderElements[orderId].remove();
+                    orderElements[orderId] = undefined;
+                } else {
+                    console.error('Failed to mark order as ready:', response.status);
+                }
+            } catch (error) {
+                console.error('Error occurred while marking order as ready:', error);
+            }
+        }
+
+        async function addOrder(order) {
+            const orderId = order.id;
+
+            const orderElement = document.createElement('div');
+            orderElement.className = 'order-item';
+            orderElement.setAttribute('data-order-id', orderId);
+            orderElements[order.id] = orderElement;
+
+            const orderHeader = document.createElement('h4');
+            orderHeader.innerText = `Order for Table ${order.tableId}`;
+            orderElement.appendChild(orderHeader);
+
+            const orderItemList = document.createElement('ul');
+            orderItemList.className = 'item-info';
+            if (order.items?.length) {
+                for (const orderItem of order.items) {
+                    const orderItemElement = document.createElement('li');
+
+                    const orderItemName = document.createElement('p');
+                    orderItemName.innerText = (orderItem.count > 1 ? orderItem.count + 'x ' : '') + menuItems[orderItem.itemId].name;
+                    orderItemElement.appendChild(orderItemName);
+
+                    if (orderItem.options?.length) {
+                        const orderItemOptions = document.createElement('p');
+                        orderItemOptions.innerText = '\xa0 - Options: ' + Object.keys(orderItem.options).map((optionId) => menuOptions[optionId] + ': ' + orderItem.options[optionId]).join(', ');
+                        orderItemElement.appendChild(orderItemOptions);
+                    }
+
+                    if (orderItem.allergies) {
+                        const orderItemAllergies = document.createElement('p');
+                        orderItemAllergies.innerText = `\xa0 - Allergies: ${orderItem.allergies}`
+                        orderItemElement.appendChild(orderItemAllergies);
+                    }
+                    
+                    if (orderItem.request) {
+                        const orderItemRequest = document.createElement('p');
+                        orderItemRequest.innerText = `\xa0 - Special Request: ${orderItem.request}`
+                        orderItemElement.appendChild(orderItemRequest);
+                    }
+
+                    orderItemList.appendChild(orderItemElement);
+                }
+            } else {
+                const orderItemElement = document.createElement('li');
+                orderItemElement.innerText = 'No items in the order.';
+                orderItemList.appendChild(orderItemElement);
+            }
+            orderElement.appendChild(orderItemList);
+
+            const orderClearButton = document.createElement('button');
+            orderClearButton.className = 'btn btn-danger btn-sm mark-ready-btn';
+            orderClearButton.innerText = 'Clear Order';
+            orderClearButton.addEventListener('click', async () => clearOrder(orderId));
+            orderElement.appendChild(orderClearButton);
+
+            orderQueue.appendChild(orderElement);
+        }
+
+        document.querySelectorAll('.mark-ready-btn').forEach(button => {
+            const orderId = button.parentNode.getAttribute('data-order-id');
+            button.addEventListener('click', async () => clearOrder(orderId));
+        });
+
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/kitchen/order/list', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (response.ok) {
+                    const fetchedOrders = await response.json();
+                    let ordersToKeep = [];
+                    for (const fetchedOrder of fetchedOrders) {
+                        ordersToKeep.push(fetchedOrder.id);
+                        if (orderElements[fetchedOrder.id] == undefined) {
+                            await addOrder(fetchedOrder);
+                        }
+                    }
+                    Object.keys(orderElements).forEach(orderId => {
+                        if (orderElements[orderId] != undefined && !ordersToKeep.includes(orderId)) {
+                            orderElements[orderId].remove();
+                            orderElements[orderId] = undefined;
+                        }
+                    })
+                } else {
+                    console.error('Failed to fetch order queue: ', response.status);
+                }
+            } catch (error) {
+                console.error('Error occurred while fetching order queue: ', error);
+            }
+        }, 1000);
+    </script>
+</body>
+
+</html>

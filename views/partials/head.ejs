@@ -1,0 +1,73 @@
+<header>
+    <div class="px-3 py-4 text-bg-dark border-bottom">
+        <div class="container-fluid justify-content-lg-start">
+            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+                <a href="/" class="d-flex align-items-center my-2 my-lg-0 me-lg-auto text-white text-decoration-none">
+                    <img src="/images/logoCloseup.png" role="img" alt="LogoClose" width="100" height="84">
+                </a>
+                <ul class="nav col-12 col-lg-auto my-2 justify-content-center my-md-0 text-small">
+                    <li>
+                        <a href="/profile" class="nav-link text-secondary">
+                            Home
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/clock" class="nav-link text-white">
+                            Clock
+                        </a>
+                    </li>
+                    <li id="queueNavLink">
+                        <a href="/queue" class="nav-link text-white">
+                            Orders
+                        </a>
+                    </li>
+                    <li id="floormapNavLink">
+                        <a href="/floormap" class="nav-link text-white">
+                            Floor Map
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>
+<script>
+    async function getEmployeeData() {
+        const employeeData = await (await fetch(window.location.origin + '/api/common/employee', {
+            method: 'GET'
+        })).json();
+        return employeeData.position;
+    }
+
+    async function renderHeader() {
+        const position = await getEmployeeData();
+        if (position.includes('manager')) {
+            const menuLink = document.createElement('li');
+            menuLink.innerHTML = `
+                <a href="/menu/management" class="nav-link text-white">
+                    Menu
+                </a>
+            `;
+            const navList = document.querySelector('.nav');
+            navList.appendChild(menuLink);
+        }
+
+        if (position.includes('kitchen')) {
+            const floorMapNavLink = document.getElementById('floormapNavLink');
+            if (floorMapNavLink) {
+                floorMapNavLink.remove();
+            }
+        }
+        
+        if (position.includes('waitstaff')) {
+            const queueNavLink = document.getElementById('queueNavLink');
+            if (queueNavLink) {
+                queueNavLink.remove();
+            }
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        renderHeader();
+    });
+</script>

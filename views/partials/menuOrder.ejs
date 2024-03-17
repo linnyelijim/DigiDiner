@@ -1,0 +1,112 @@
+<style>
+    .iframe-container {
+        flex: 1;
+    }
+
+    .iframe-wrapper {
+        overflow: auto;
+    }
+
+    #order-iframe {
+        height: 70vh;
+    }
+</style>
+
+<div class="container">
+    <h1 id="menu" class="text-center">Menu</h1>
+    <div class="row g-2">
+        <div class="col-md-7">
+            <%- include('menu') %>
+        </div>
+        <div class="col-md-5 order-container">
+            <h4 class="d-flex justify-content-between align-items-center mb-3">
+                <span class="text-primary">Your Order</span>
+            </h4>
+            <div>
+                <ul class="list-group mb-3">
+                    <li class="list-group-item d-flex justify-content-between lh-sm iframe-container">
+                        <div class="iframe-wrapper">
+                            <iframe id="order-iframe"
+                                src="/order/<%= typeof order !== 'undefined' ? order.id : '' %>"></iframe>
+                        </div>
+                    </li>
+                </ul>
+                <button class="btn btn-primary confirm-order-btn float-right" onclick="confirmOrder()">Confirm
+                    Order</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var orderId;
+    const iframe = document.getElementById('order-iframe');
+
+    <% if (typeof order !== 'undefined') { %>
+        orderId = <%= order.id %>;
+    <% } %>
+
+        function updateIframe() {
+            iframe.src = '/order/' + orderId;
+        }
+
+    async function addToOrder(itemId) {
+        const selectedOptions = Array.from(document.querySelectorAll('#collapse' + itemId + ' input[type="checkbox"]:checked'), checkbox => checkbox.value);
+        const selectedAllergies = Array.from(document.querySelectorAll(`#allergyCollapse${itemId} input[type="checkbox"]:checked`), checkbox => checkbox.value);
+        const specialRequest = document.getElementById('specialRequest' + itemId).value;
+
+        try {
+            const response = await fetch(`/api/customer/order/item?orderId=${orderId}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                method: 'POST',
+                body: JSON.stringify({
+                    itemId: itemId,
+                    options: selectedOptions,
+                    allergies: selectedAllergies.join(','),
+                    request: specialRequest
+                })
+            });
+
+            if (response.ok) {
+                updateIframe();
+                alert('Item added to the order!');
+            } else {
+                let errorResponse = await response.json();
+                errorResponse.status = response.status;
+                console.error('Failed to add item to the order!', errorResponse);
+                alert('Failed to add item to the order!\n' + errorResponse.error);
+            }
+        } catch (error) {
+            console.error('Error adding item to the order!', error);
+            alert('Error adding item to the order!');
+        }
+    }
+
+    async function confirmOrder() {
+        try {
+            const response = await fetch(`/api/customer/order/submit?orderId=${orderId}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                alert('Your order has been submitted!');
+                window.location.href = '/bill/' + orderId;
+            } else {
+                let errorResponse = await response.json();
+                errorResponse.status = response.status;
+                console.error('Failed to submit order!', errorResponse);
+                alert('Failed to submit order!\n' + errorResponse.error)
+            }
+        } catch (error) {
+            console.error('Error submitting order!', error);
+            alert('Error submitting order!');
+        }
+    }
+</script>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DigiDiner</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <style>
+        @media (max-width: 576px) {
+            body {
+                padding-top: 60px;
+            }
+
+            main {
+                padding-bottom: 20px;
+            }
+
+            p#description {
+                margin-bottom: 20px;
+            }
+
+            div#button-container {
+                margin-bottom: 20px;
+            }
+        }
+
+        .nav-link {
+            color: white;
+            font-size: 25px;
+        }
+
+        .modal-content {
+            color: black;
+        }
+    </style>
+    <%- include('partials/session') %>
+</head>
+
+<body>
+    <div class="container-fluid cover-container d-flex w-100 h-100 p-3 mx-auto flex-column text-bg-dark">
+        <header class="mb-auto text-center">
+            <div>
+                <nav class="nav nav-masthead justify-content-center float-md-end">
+                    <a id="profileNavLink" class="nav-link fw-bold px-3" aria-current="page" href="/profile">Profile</a>
+                    <a id="clockNavLink" class="nav-link fw-bold px-3" href="/clock">Clock</a>
+                    <a id="queueNavLink" class="nav-link fw-bold px-3" href="/queue">Orders</a>
+                    <a id="floormapNavLink" class="nav-link fw-bold px-3" href="/floormap">Floor Map</a>
+                </nav>
+            </div>
+            <% if (employee.position==='manager' ) { %>
+                <button class="btn btn-primary" onclick="generateNewEmployeeId()">Generate ID</button>
+                <button class="btn btn-primary" onclick="showEmployeeList()">Edit Employees</button>
+                <% } %>
+        </header>
+
+        <main class="px-3 d-flex flex-column h-100 align-items-center">
+            <div class="col-8 col-sm-6 col-md-4 text-center my-3">
+                <img src="/images/profile.png" alt="Profile Picture" class="img-fluid rounded-circle mb-3">
+            </div>
+            <br><br>
+            <h1 class="text-center mt-3 mb-3">Welcome, <span id="firstName">
+                    <%= employee.nameFirst %>
+                </span> <span id="lastName">
+                    <%= employee.nameLast %>
+                </span></h1>
+            <div class="text-center">
+                <p class="lead">User ID: <span id="employeeId">
+                        <%= employee.id %>
+                    </span></p>
+                <p class="lead">Position: <span id="position">
+                        <%= employee.position %>
+                    </span></p>
+            </div>
+            <p class="position-md-absolute top-0 start-0 m-3">Hire Date: <span id="hireDate">
+                    <%= employee.hireDate %>
+                </span></p>
+            <br>
+            <p id="description" class=" text-center lead mt-4 mb-4">This is your personal employee portal.
+                <br>
+                Here you can find all your employee information such as benefits, employment paperwork, statistics,
+                paystubs, and the employee handbook.
+                <br><br>
+            </p>
+            <div id="button-container" class="text-center">
+                <a href="#" class="btn btn-lg btn-light fw-bold border-white bg-white">Information Portal</a>
+                <br><br>
+            </div>
+        </main>
+        <!-- Employee List Modal -->
+        <div class="modal fade" id="employeeListModal" tabindex="-1" aria-labelledby="employeeListModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="employeeListModalLabel">Employee List</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul id="employeeList" class="list-group">
+                            <!-- The employee list will be displayed here -->
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Details Modal -->
+        <div class="modal fade" id="employeeDetailsModal" tabindex="-1" aria-labelledby="employeeDetailsModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="employeeDetailsModalLabel">Employee Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="employeeDetailsForm">
+                            <div class="mb-3">
+                                <label for="idInput" class="form-label">ID</label>
+                                <input type="text" class="form-control" id="idInput" disabled="disabled">
+                            </div>
+                            <div class="mb-3">
+                                <label for="firstNameInput" class="form-label">First Name</label>
+                                <input type="text" class="form-control" id="firstNameInput" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="lastNameInput" class="form-label">Last Name</label>
+                                <input type="text" class="form-control" id="lastNameInput" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="positionInput" class="form-label">Position</label>
+                                <select class="form-select" id="positionInput" required>
+                                    <option value="manager">Manager</option>
+                                    <option value="waitstaff">Waitstaff</option>
+                                    <option value="kitchen">Kitchen</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="updateEmployee()">Update</button>
+                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal"
+                            onclick="deleteEmployee()">Delete</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                            onclick="showEmployeeList()">Back</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <%- include('partials/footer') %>
+        </footer>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Function to retrieve the signed-in employee information from the server
+        async function getSignedInEmployee() {
+            try {
+                const response = await fetch('/api/common/employee', {
+                    method: 'GET',
+                });
+
+                if (response.ok) {
+                    const employee = await response.json();
+                    return employee;
+                } else {
+                    console.error('Failed to retrieve signed-in employee:', response.status);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error retrieving signed-in employee:', error);
+                return null;
+            }
+        }
+
+        async function generateNewEmployeeId() {
+            try {
+                const response = await fetch('/api/management/employee/create', {
+                    method: 'POST',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert('New Employee ID: ' + data.id);
+                } else {
+                    console.error('Failed to generate employee ID:', response.status);
+                }
+            } catch (error) {
+                console.error('Error generating employee ID:', error);
+            }
+        }
+
+        async function getEmployeeList() {
+            try {
+                const response = await fetch('/api/management/employee/list', {
+                    method: 'GET',
+                });
+
+                if (response.ok) {
+                    return await response.json();
+                } else {
+                    console.error('Failed to retrieve employee list:', response.status);
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error retrieving employee list:', error);
+                return null;
+            }
+        }
+
+        // Function to display the employee list in the modal
+        async function showEmployeeList() {
+            const employeeList = await getEmployeeList();
+            if (employeeList) {
+                const employeeListModal = new bootstrap.Modal(document.getElementById('employeeListModal'));
+                const employeeListContainer = document.getElementById('employeeList');
+                employeeListContainer.innerHTML = '';
+                employeeList.forEach((employee) => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('list-group-item');
+                    listItem.textContent = employee.nameFirst != null ? `${employee.nameFirst} ${employee.nameLast}` : `Employee Awaiting Signup`;
+                    listItem.addEventListener('click', () => {
+                        showEmployeeDetails(employee);
+                        employeeListModal.hide();
+                    });
+                    employeeListContainer.appendChild(listItem);
+                });
+                employeeListModal.show();
+            }
+        }
+
+        // Function to display the employee details in the modal
+        function showEmployeeDetails(employee) {
+            const employeeListModal = new bootstrap.Modal(document.getElementById('employeeListModal'));
+            const employeeDetailsModal = new bootstrap.Modal(document.getElementById('employeeDetailsModal'));
+            const firstNameInput = document.getElementById('firstNameInput');
+            const lastNameInput = document.getElementById('lastNameInput');
+            const idInput = document.getElementById('idInput');
+            const positionInput = document.getElementById('positionInput');
+
+            idInput.value = employee.id;
+            if (employee.nameFirst != null) {
+                firstNameInput.disabled = false;
+                firstNameInput.value = employee.nameFirst;
+                lastNameInput.disabled = false;
+                lastNameInput.value = employee.nameLast;
+            } else {
+                firstNameInput.disabled = true;
+                firstNameInput.value = "N/A (Employee Awaiting Signup)";
+                lastNameInput.disabled = true;
+                lastNameInput.value = "N/A (Employee Awaiting Signup)";
+            }
+            positionInput.value = employee.position;
+
+            employeeDetailsModal.show();
+        }
+
+        // Function to update the employee details
+        async function updateEmployee() {
+            const firstName = document.getElementById('firstNameInput').value;
+            const lastName = document.getElementById('lastNameInput').value;
+            const id = document.getElementById('idInput').value;
+            const position = document.getElementById('positionInput').value;
+
+            try {
+                const response = await fetch(`/api/management/employee/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nameFirst: firstName,
+                        nameLast: lastName,
+                        position: position
+                    })
+                });
+
+                if (response.ok) {
+                    alert('Employee details updated successfully!');
+                    const updatedEmployee = {
+                        id: id,
+                        nameFirst: firstName,
+                        nameLast: lastName,
+                        position: position
+                    };
+                } else {
+                    console.error('Failed to update employee details:', response.status);
+                }
+            } catch (error) {
+                console.error('Error updating employee details:', error);
+            }
+        }
+
+        // Function to delete the selected employee
+        async function deleteEmployee() {
+            const employeeId = document.getElementById('idInput').value;
+            try {
+                const response = await fetch(`/api/management/employee/${employeeId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    alert('Employee deleted successfully!');
+                    showEmployeeList();
+                } else {
+                    console.error('Failed to delete employee:', response.status);
+                }
+            } catch (error) {
+                console.error('Error deleting employee:', error);
+            }
+        }
+
+        // Function to update the session nav links' hrefs with the employee ID
+        async function updateSessionNavLinks() {
+            const employee = await getSignedInEmployee();
+            if (employee) {
+                const firstNameElement = document.getElementById('firstName');
+                firstNameElement.textContent = employee.nameFirst;
+                const lastNameElement = document.getElementById('lastName');
+                lastNameElement.textContent = employee.nameLast;
+                const employeeIdElement = document.getElementById('employeeId');
+                employeeIdElement.textContent = employee.id;
+                const positionElement = document.getElementById('position');
+                positionElement.textContent = employee.position;
+                const hireDateElement = document.getElementById('hireDate');
+                hireDateElement.textContent = new Date(employee.hireDate).toLocaleDateString('en-us');
+            }
+        }
+
+        // Call the function to update the session nav links
+        updateSessionNavLinks();
+
+        async function renderHeader() {
+            const employee = await getSignedInEmployee();
+            if (employee.position.includes('manager')) {
+                const menuLink = document.createElement('li');
+                menuLink.innerHTML = `
+                    <a id="floormapNavLink" class="nav-link fw-bold px-3" href="/menu/management">
+                        Menu
+                    </a>
+                `;
+                const navList = document.querySelector('.nav');
+                navList.appendChild(menuLink);
+            }
+
+            if (employee.position.includes('kitchen')) {
+                const floorMapNavLink = document.getElementById('floormapNavLink');
+                if (floorMapNavLink) {
+                    floorMapNavLink.remove();
+                }
+            }
+
+            if (employee.position.includes('waitstaff')) {
+                const queueNavLink = document.getElementById('queueNavLink');
+                if (queueNavLink) {
+                    queueNavLink.remove();
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderHeader();
+        });
+    </script>
+</body>
+
+</html>

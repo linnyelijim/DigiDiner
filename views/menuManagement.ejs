@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>DigiDiner</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+
+    <style>
+        .nav-link {
+            font-size: 1.2rem;
+        }
+
+        .nav-link.active {
+            background-color: #e3f2fd;
+        }
+
+        header {
+            box-shadow: 0 2px 4px rgba(84, 84, 84, 0.1);
+        }
+
+        footer {
+            background-color: #f8f9fa;
+            /* Solid color for the footer */
+            padding: 20px 0;
+            /* Adjust padding as needed */
+            color: #6c757d;
+            /* Text color */
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="col-md-12">
+            <%- include('partials/head') %>
+        </div>
+    </header>
+
+    <main>
+        <div id="managerEditButtonWrapper" class="manager-edit-button-wrapper">
+            <button id="managerEditButton" class="btn btn-primary managerEditButton">Edit</button>
+        </div>
+        <br>
+        <hr class="section-divider">
+        <%- include('partials/menu') %>
+    </main>
+    <!-- Modal for creating a new item -->
+    <div class="modal fade" id="newItemModal" tabindex="-1" aria-labelledby="newItemModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="newItemModalLabel">Create New Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="itemName" class="form-label">Item Name</label>
+                            <input type="text" class="form-control" id="itemName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="itemDescription" class="form-label">Item Description</label>
+                            <input type="text" class="form-control" id="itemDescription" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="itemPrice" class="form-label">Item Price</label>
+                            <input type="number" class="form-control" id="itemPrice" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="itemCategory" class="form-label">Item Category</label>
+                            <select class="form-select item-category" id="itemCategory" required>
+                                <option value="lunch">Lunch</option>
+                                <option value="dinner">Dinner</option>
+                                <option value="drink">Drink</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveNewItem()">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <%- include('partials/footer') %>
+    </footer>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+</body>
+
+<script>
+    function hideMenuSections() {
+        const addToOrderButtons = document.querySelectorAll('#addToOrderBtn');
+        addToOrderButtons.forEach(button => {
+            button.style.display = 'none';
+        });
+
+        const allergySections = document.querySelectorAll('#allergy');
+        allergySections.forEach(section => {
+            section.style.display = 'none';
+        });
+
+        const specialRequestSections = document.querySelectorAll('#specialRequest');
+        specialRequestSections.forEach(section => {
+            section.style.display = 'none';
+        });
+    }
+
+    async function toggleEditOptions() {
+        const managerEditButtonWrapper = document.getElementById('managerEditButtonWrapper');
+        managerEditButtonWrapper.style.display = 'block';
+        managerEditButtonWrapper.innerHTML = `
+                <button class="btn btn-primary managerEditButton" onclick="toggleSaveNewDeleteButtons()">Edit</button>
+            `;
+    }
+
+    function toggleSaveNewDeleteButtons() {
+        const managerEditButtonWrapper = document.getElementById('managerEditButtonWrapper');
+        managerEditButtonWrapper.innerHTML = `
+                <button class="btn btn-primary" onclick="saveChanges()">Save</button>
+                <button class="btn btn-primary" onclick="createNewItem()">New Item</button>
+                <button class="btn btn-danger" onclick="deleteItems()">Delete</button>
+            `;
+
+        const menuItems = document.querySelectorAll('.accordion-item');
+        menuItems.forEach((item, index) => {
+            const newItemCategory = item.getAttribute('data-item-category');
+            const checkbox = document.createElement('input');
+            checkbox.setAttribute('type', 'checkbox');
+            checkbox.classList.add('edit-checkbox');
+            item.prepend(checkbox);
+        });
+
+        const itemNames = document.querySelectorAll('.item-name');
+        itemNames.forEach((name) => {
+            const nameInput = document.createElement('input');
+            nameInput.setAttribute('type', 'text');
+            nameInput.defaultValue = name.innerText;
+            nameInput.value = name.innerText;
+            name.innerText = '';
+            name.appendChild(nameInput);
+        });
+
+        const itemPrices = document.querySelectorAll('.item-price');
+        itemPrices.forEach((price) => {
+            const priceValue = parseFloat(price.querySelector('span').innerText.slice(1));
+            const priceInput = document.createElement('input');
+            priceInput.setAttribute('type', 'number');
+            priceInput.defaultValue = priceValue;
+            priceInput.value = priceValue;
+            price.innerText = '';
+            price.appendChild(priceInput);
+        });
+
+        const itemDescriptions = document.querySelectorAll('.item-description');
+        itemDescriptions.forEach((description) => {
+            const descriptionInput = document.createElement('textarea');
+            descriptionInput.dataset.defaultValue = description.innerText;
+            descriptionInput.textContent = description.innerText;
+            description.innerText = '';
+            description.appendChild(descriptionInput);
+        });
+    }
+
+    async function refreshMenu() {
+        try {
+            const response = await fetch('/api/menu');
+            if (!response.ok) {
+                throw new Error('Failed to fetch menu data');
+            }
+            const menuItems = await response.json();
+            await updateMenuItems(menuItems);
+        } catch (error) {
+            console.error('Error refreshing menu:', error);
+        }
+    }
+
+    function createNewItem() {
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemDescription').value = '';
+        document.getElementById('itemPrice').value = '';
+        document.getElementById('itemCategory').selectedIndex = 0;
+        $(`#newItemModal`).modal('show');
+    }
+
+    async function addMenuItem(newItem) {
+        const response = await fetch('/api/menu', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newItem),
+        });
+
+        if (response.ok) {
+            const newItemData = await response.json();
+            console.log('New item added:', newItemData);
+        } else {
+            console.error('Failed to add new item:', response.status, response.statusText);
+        }
+    }
+
+    async function saveNewItem() {
+        const itemName = document.getElementById('itemName').value;
+        const itemDescription = document.getElementById('itemDescription').value;
+        const itemPrice = parseFloat(document.getElementById('itemPrice').value);
+        const itemCategory = document.getElementById('itemCategory').options[document.getElementById('itemCategory').selectedIndex].value;
+
+        if (itemName && itemDescription && !isNaN(itemPrice) && itemCategory) {
+            const newItem = {
+                name: itemName,
+                description: itemDescription,
+                price: itemPrice,
+                category: itemCategory,
+            };
+
+            try {
+                await addMenuItem(newItem);
+                await refreshMenu();
+                toggleSaveNewDeleteButtons();
+                $(`#newItemModal`).modal('hide');
+            } catch (error) {
+                alert('Failed to add new item. Please try again.');
+            }
+        } else {
+            alert('Please provide all the required fields to create a new item.');
+        }
+    }
+
+
+    async function updateMenuItems(itemsToUpdate, save) {
+        for (const item of itemsToUpdate) {
+            const { id, name, description, price, category } = item;
+
+            let menuItemElement = document.getElementById(`menu-item-${id}`);
+
+            if (menuItemElement == null) {
+                const categoryContent = document.getElementById(`${category}MenuContent`);
+
+                if (categoryContent == null) {
+                    console.error(`Can't add item because its category does not exist! ${category}`);
+                    continue;
+                }
+
+                menuItemElement = document.querySelector(`[id|="menu-item"]`).cloneNode(true); // This works as long as there is at least one menu item
+                const clonedId = parseInt(menuItemElement.id.slice(10));
+
+                for (const menuItemChildElement of menuItemElement.getElementsByTagName("*")) {
+                    if (menuItemChildElement.hasAttribute('id')) menuItemChildElement.id = menuItemChildElement.id.replace(clonedId, id); // Kinda cursed, but as long as it works...
+                    if (menuItemChildElement.dataset.bsTarget) menuItemChildElement.dataset.bsTarget = menuItemChildElement.dataset.bsTarget.replace(clonedId, id);
+                    if (menuItemChildElement.hasAttribute('aria-labelledby')) menuItemChildElement.setAttribute('aria-labelledby', menuItemChildElement.getAttribute('aria-labelledby').replace(clonedId, id));
+                    if (menuItemChildElement.hasAttribute('aria-controls')) menuItemChildElement.setAttribute('aria-controls', menuItemChildElement.getAttribute('aria-controls').replace(clonedId, id));
+                }
+
+                menuItemElement.id = `menu-item-${id}`;
+                menuItemElement.dataset.itemId = id;
+                menuItemElement.dataset.itemCategory = category;
+
+                categoryContent.appendChild(menuItemElement);
+            }
+
+            const menuItemButton = menuItemElement.querySelector(`#heading${id} .accordion-button`);
+            const menuItemName = menuItemButton.querySelector('.item-name');
+            const menuItemPriceBadge = menuItemButton.querySelector('.item-price');
+            const menuItemDescription = menuItemElement.querySelector(`#collapse${id} .item-description`);
+            const menuItemEditCheckbox = menuItemElement.querySelector(`.edit-checkbox`);
+
+            menuItemName.textContent = name;
+            menuItemPriceBadge.innerHTML = `<span class="badge bg-primary">$${Number(price).toFixed(2)}</span>`;
+            menuItemDescription.textContent = description;
+            if (menuItemEditCheckbox != null) menuItemEditCheckbox.remove();
+
+            if (save) {
+                const updatedData = {
+                    name,
+                    description,
+                    price,
+                    category
+                };
+
+                try {
+                    const response = await fetch(`/api/menu/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(updatedData),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+
+                    const data = await response.json();
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        }
+    }
+
+    async function deleteItems() {
+        const itemsToDelete = [];
+        const checkboxes = document.querySelectorAll('.edit-checkbox');
+        checkboxes.forEach((checkbox) => {
+            if (checkbox.checked) {
+                /* console.log(checkbox);
+                console.log(checkbox.parentNode);
+                console.log(checkbox.parentNode.parentNode);
+                console.log(checkbox.parentNode.parentNode.getAttribute('id')); */
+                const menuItemElement = checkbox.closest('.accordion-item');
+                const menuItemId = menuItemElement.querySelector('.accordion-collapse').getAttribute('id').replace('collapse', '');
+                menuItemElement.remove();
+                itemsToDelete.push(menuItemId);
+            }
+        });
+        for (const itemId of itemsToDelete) {
+            const response = await fetch(`/api/menu/${itemId}`, {
+                method: 'DELETE',
+            });
+            if (response.ok) {
+                console.log('Item deleted:', itemId);
+            } else {
+                console.error('Failed to delete item:', response.status, response.statusText);
+            }
+        }
+        await refreshMenu();
+        toggleSaveNewDeleteButtons()
+    }
+
+    async function saveChanges() {
+        const itemsToUpdate = [];
+        const itemNames = document.querySelectorAll('.accordion-item .item-name input');
+        const itemDescriptions = document.querySelectorAll('.accordion-item .item-description textarea');
+        const itemPrices = document.querySelectorAll('.accordion-item .item-price input');
+
+        itemNames.forEach((input, index) => {
+            const menuItemId = input.closest('.accordion-item').dataset.itemId;
+            const newItemName = input.value;
+            const newItemDescription = itemDescriptions[index].value;
+            const newItemPrice = parseFloat(itemPrices[index].value);
+            const newItemCategory = input.closest('.accordion-item').dataset.itemCategory;
+            if (newItemName != input.defaultValue || newItemPrice != parseFloat(itemPrices[index].defaultValue) || newItemDescription != itemDescriptions[index].dataset.defaultValue) {
+                itemsToUpdate.push({ id: menuItemId, name: newItemName, description: newItemDescription, price: newItemPrice, category: newItemCategory });
+            }
+        });
+
+        await updateMenuItems(itemsToUpdate, true);
+        refreshMenu();
+        hideMenuSections();
+        toggleEditOptions();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        toggleEditOptions();
+        hideMenuSections();
+    });
+</script>
+
+</html>

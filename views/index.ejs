@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>DigiDiner</title>
+	<link rel="stylesheet" href="/css/bootstrap.min.css">
+	<style>
+		body {
+			background-color: #333;
+		}
+
+		.signin-form {
+			background-color: #222;
+			box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+		}
+	</style>
+</head>
+
+<body>
+	<main>
+		<div class="container col-xl-10 col-xxl-8 px-4 py-5">
+			<div class="row align-items-center g-lg-5 py-5">
+				<div class="col-md-10 mx-auto col-lg-5">
+					<img src="/images/logo.png" alt="Image" class="img-fluid mb-3">
+					<div class="p-4 border rounded-3 bg-body-tertiary signin-form">
+						<form id="signin-form">
+							<h1 class="text-center mb-4">Employee Portal</h1>
+							<div class="form-floating mb-3">
+								<input type="text" class="form-control" id="floatingIdSignIn" placeholder="123456">
+								<label for="floatingIdSignIn">Employee ID</label>
+							</div>
+							<div class="form-floating mb-3">
+								<input type="password" class="form-control" id="floatingPasswordSignIn"
+									placeholder="Password">
+								<label for="floatingPasswordSignIn">Password</label>
+								<span class="password-toggle" onclick="togglePasswordVisibility('floatingPasswordSignIn')">
+									<i class="bi bi-eye"></i></span>
+							</div>
+							<div class="checkbox mb-3">
+								<label>
+									<input id="rememberSignIn" type="checkbox" value="remember-me">Remember me
+								</label>
+							</div>
+							<button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
+						</form>
+						<hr class="my-4">
+						<small class="text-body-secondary">Don't have an account? <button class="btn btn-link btn-sm"
+								data-bs-toggle="modal" data-bs-target="#signupModal">Sign up</button></small>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="modal fade" id="signupModal" tabindex="-1" aria-labelledby="signupModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<div class="modal-header">
+						<h5 class="modal-title" id="signupModalLabel">Create an Account</h5>
+					</div>
+					<div class="modal-body">
+						<form id="signup-form" class="p-4 p-md-5 border rounded-3 bg-body-tertiary">
+							<div class="form-floating mb-3">
+								<input type="text" class="form-control" id="floatingIdSignUp" placeholder="123456">
+								<label for="floatingIdSignUp">Employee ID</label>
+							</div>
+							<div class="form-floating mb-3">
+								<input type="text" class="form-control" id="floatingFirstSignUp"
+									placeholder="First Name">
+								<label for="floatingFirstSignUp">First Name</label>
+							</div>
+							<div class="form-floating mb-3">
+								<input type="text" class="form-control" id="floatingLastSignUp" placeholder="Last Name">
+								<label for="floatingLastSignUp">Last Name</label>
+							</div>
+							<div class="form-floating mb-3">
+								<input type="text" class="form-control" id="floatingPasswordSignUp"
+									placeholder="Password">
+								<label for="floatingPasswordSignUp">Password</label>
+								<span class="password-toggle"
+									onclick="togglePasswordVisibility('floatingPasswordSignUp')">
+									<i class="bi bi-eye"></i></span>
+							</div>
+							<div class="checkbox mb-3">
+								<label>
+									<input id="rememberSignUp" type="checkbox" value="remember-me">Remember me
+								</label>
+							</div>
+							<button class="w-100 btn btn-lg btn-primary" type="submit">Sign up</button>
+							<hr class="my-4">
+							<small class="text-body-secondary">By clicking Sign up, you agree to the terms of
+								use.</small>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="/js/bootstrap.min.js"></script>
+		<script>
+			document.getElementById('signin-form').addEventListener('submit', async function (event) {
+				event.preventDefault();
+				const employeeId = document.getElementById('floatingIdSignIn').value;
+				const password = document.getElementById('floatingPasswordSignIn').value;
+				const remember = document.getElementById('rememberSignIn').checked;
+				if (!employeeId || !password) {
+					console.error('Missing Required Fields');
+					return;
+				}
+
+				try {
+					const response = await fetch('/api/common/employee/auth', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({
+							id: employeeId,
+							pass: password,
+							remember: remember
+						})
+					});
+
+					if (response.ok) {
+						const data = await response.json();
+						console.log('Authentication successful:', data);
+
+						/*if (remember) {
+							localStorage.setItem('authToken', data.token);
+						}*/
+
+						window.location.href = `/profile`;
+					} else {
+						const errorData = await response.json();
+						console.error('Authentication failed:', errorData.error);
+					}
+				} catch (error) {
+					console.error('Error during authentication:', error);
+				}
+			});
+
+			function togglePasswordVisibility(inputId) {
+				const passwordInput = document.getElementById(inputId);
+				if (passwordInput.type === "password") {
+					passwordInput.type = "text";
+				} else {
+					passwordInput.type = "password";
+				}
+			}
+
+			document.getElementById('signup-form').addEventListener('submit', async function (event) {
+				event.preventDefault();
+				const employeeId = document.getElementById('floatingIdSignUp').value;
+				const firstName = document.getElementById('floatingFirstSignUp').value;
+				const lastName = document.getElementById('floatingLastSignUp').value;
+				const password = document.getElementById('floatingPasswordSignUp').value;
+				const remember = document.getElementById('rememberSignUp').checked;
+
+				if (!employeeId || !firstName || !lastName || !password) {
+					console.error('Missing Required Fields');
+					return;
+				}
+
+				try {
+					const signupResponse = await fetch('/api/common/employee/signup', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({
+							id: employeeId,
+							nameFirst: firstName,
+							nameLast: lastName,
+							pass: password
+						})
+					});
+
+					if (signupResponse.ok) {
+						console.log('User created successfully');
+						const response = await fetch('/api/common/employee/auth', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({
+								id: employeeId,
+								pass: password,
+								remember: remember
+							})
+						});
+
+						if (response.ok) {
+							const data = await response.json();
+							console.log('Authentication successful:', data);
+							window.location.href = `/profile`;
+						} else {
+							const errorData = await response.json();
+							console.error('Authentication failed:', errorData.error);
+						}
+						const signupModal = new bootstrap.Modal(document.getElementById('signupModal'));
+						signupModal.hide();
+					} else {
+						const errorData = await signupResponse.json();
+						console.error('User creation failed:', errorData.error);
+					}
+				} catch (error) {
+					console.error('Error during user creation:', error);
+				}
+			});
+			
+			// Function to check for an existing authentication token in local storage and use it if available
+			/*function checkRememberMe() {
+				const authToken = localStorage.getItem('authToken');
+				if (authToken) {
+					// Redirect to the authenticated user's profile page
+					window.location.href = `/profile`;
+				}
+			}
+
+			checkRememberMe();*/
+		</script>
+	</main>
+</body>
+
+</html>

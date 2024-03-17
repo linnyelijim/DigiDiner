@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Restaurant Floor Map</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <style>
+        .table-cell {
+            width: 200px;
+            height: 200px;
+            border: 6px inset #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.1);
+            /* Added box shadow */
+            /* margin-bottom: 20px; */
+            /* Added padding between tables in the columns */
+        }
+
+        .table-space {
+            visibility: hidden;
+        }
+
+        .table-unoccupied {
+            background-color: rgba(128, 128, 128, 0.582);
+            /* Highlight unoccupied table with grey */
+        }
+
+        .table-occupied {
+            background-color: rgba(0, 128, 0, 0.582);
+            /* Highlight occupied table with green */
+        }
+
+        .table-dirty {
+            background-color: rgb(179, 40, 40, 0.582);
+            /* Highlight dirty table with red */
+        }
+
+        .table-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .table-grid .row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+            margin-right: 20px;
+            /* Added margin-bottom between rows */
+        }
+
+        .modal-content {
+            color: black;
+        }
+
+        .modal-combo-footer {
+            display: grid;
+            grid-template-columns: min-content;
+            grid-auto-flow: column;
+        }
+
+        #order-iframe {
+            width: 16vw;
+        }
+    </style>
+    <%- include('partials/session') %>
+        <script src="/js/qrcode.js"></script>
+</head>
+
+
+<body>
+    <div class="container-fluid cover-container d-flex w-100 h-100 p-3 mx-auto flex-column text-bg-dark">
+        <header>
+            <%- include('partials/head') %>
+        </header>
+        <main>
+            <div class="container-fluid">
+                <h1 class="mt-4 mb-4 text-center">Main Dining Room</h1>
+                <div class="row justify-content-center">
+                    <div class="col-md-12 center-content">
+                        <div class="table-grid" id="tableGrid">
+                            <!-- Table cells are populated dynamically using populateTables() -->
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#newTableModal"
+                        id="createTableButton">Create New Table</button>
+                </div>
+                <!-- <div class="col-md-4">
+                    <button class="btn btn-primary" data-toggle="modal" data-target="#updateStatusModal">Update
+                        Status</button>
+                </div> -->
+
+                <!-- Add the guest count and order modal -->
+                <div class="modal fade" id="guestCountModal" tabindex="-1" role="dialog"
+                    aria-labelledby="guestCountModalTitle" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="guestCountModalTitle">Table <span
+                                        id="guestCountTableId"></span> - Guest
+                                    Count</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                    onclick="closeModal('guestCountModal')">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="guestCountInput">Number of Guests:</label>
+                                    <select class="form-control" id="guestCountInput">
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="1">4</option>
+                                        <option value="2">5</option>
+                                        <option value="3">6</option>
+                                        <option value="1">7</option>
+                                        <option value="2">8</option>
+                                        <option value="3">9</option>
+                                        <option value="3">10</option>
+                                        <option value="3">11</option>
+                                        <option value="3">12</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="beginOrder()">Begin
+                                    Order</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QR Code Modal -->
+                <div class="modal fade" id="qrCodeModal" tabindex="-1" role="dialog" aria-labelledby="qrCodeModalTitle"
+                    aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="qrCodeModalTitle">Scan QR Code for Table <span
+                                        id="qrCodeTableId"></span>
+                                </h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                    onclick="closeModal('qrCodeModal')">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div id="qr-code-container">
+                                    <!-- QR code image or placeholder -->
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="skipQR()">Skip</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Modal -->
+                <div class="modal fade" id="orderModal" tabindex="-1" role="dialog" aria-labelledby="orderModalTitle"
+                    aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="orderModalTitle">Order for Table <span
+                                        id="orderTableId"></span>
+                                </h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                    onclick="closeModal('orderModal')">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <span id="orderStatus"></span>
+                                <br>
+                                <span id="orderPrice"></span>
+                                <br>
+                                <span id="orderPaid"></span>
+                            </div>
+                            <div class="modal-footer modal-combo-footer">
+                                <input type="number" class="form-control" id="orderCashAmount" placeholder="Amount"
+                                    style="min-width: 6em">
+                                <button type="button" class="btn btn-primary" id="orderReceivedCashButton"
+                                    onclick="receivedCash()">Received Cash Payment</button>
+                                <button type="button" class="btn btn-primary" onclick="deleteOrder()">Cancel/Clear
+                                    Order</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Menu Modal -->
+                <div class="modal fade" id="menuModal" tabindex="-1" role="dialog" aria-labelledby="menuModalTitle"
+                    aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="menuModalTitle">Table: <span id="menuTableId"></span>
+                                </h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                    onclick="closeModal('menuModal')">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <%- include('partials/menuOrder') %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Final Bill Modal -->
+                <div class="modal fade" id="finalBillModal" tabindex="-1" role="dialog"
+                    aria-labelledby="finalBillModalTitle" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="finalBillModalTitle">Final Bill for Table <span
+                                        id="finalBillTableId"></span></h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                    onclick="closeModal('finalBillModal')">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="cleanTable()">Mark Table
+                                    Cleaned</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update Status Modal -->
+                <div class="modal fade" id="updateStatusModal" tabindex="-1" role="dialog"
+                    aria-labelledby="updateStatusModalTitle" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="updateStatusModalTitle">Update Table Status</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                    onclick="closeModal('updateStatusModal')">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>Select Status:</label><br>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="dirty" id="statusDirty">
+                                        <label class="form-check-label" for="statusDirty">
+                                            Dirty
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="occupied"
+                                            id="statusOccupied">
+                                        <label class="form-check-label" for="statusOccupied">
+                                            Occupied
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="unoccupied"
+                                            id="statusUnoccupied">
+                                        <label class="form-check-label" for="statusUnoccupied">
+                                            Unoccupied
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="modalSubmitButton">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Table Modal (only accessible for managers) -->
+                <div class="modal fade" id="newTableModal" tabindex="-1" role="dialog"
+                    aria-labelledby="newTableModalTitle" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="newTableModalTitle">Create New Table</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+                                    onclick="closeModal('newTableModal')">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="newTableForm">
+                                    <div class="form-group">
+                                        <label for="seatsInput">Number of Seats:</label>
+                                        <input type="number" class="form-control" id="seatsInput" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="posXInput">X Position:</label>
+                                        <input type="number" class="form-control" id="posXInput" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="posYInput">Y Position:</label>
+                                        <input type="number" class="form-control" id="posYInput" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="createNewTable()">Create</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <footer>
+            <%- include('partials/footer') %>
+        </footer>
+    </div>
+
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script data-menu-items="<%= JSON.stringify(menuItems) %>">
+        const menuItems = JSON.parse(document.currentScript.dataset.menuItems);
+
+        async function getEmployeeData() {
+            const employeeData = await (await fetch(window.location.origin + '/api/common/employee', {
+                method: 'GET'
+            })).json();
+
+            return employeeData.position;
+        }
+
+        function closeModal(modal) {
+            $(`#${modal}`).modal('hide');
+        }
+
+        async function populateTables() {
+            // Fetch employee position of the currently signed-in user
+            const position = await getEmployeeData();
+            const isManager = position.includes('manager');
+            // Check if the employee is a manager to display the button
+            const createTableButton = document.getElementById('createTableButton');
+            createTableButton.style.display = isManager ? 'block' : 'none';
+
+            // Generate table grid
+            const tableGrid = document.getElementById('tableGrid');
+
+            // Fetch tables data from the API
+            const tables = await (await fetch(window.location.origin + '/api/waitstaff/table/list', {
+                method: 'GET'
+            })).json();
+
+            const maxX = Math.max(...tables.map(table => table.posX));
+            const maxY = Math.max(...tables.map(table => table.posY));
+
+            // Create rows and columns for the table grid
+            for (let y = 1; y <= maxY; y++) {
+                const existingRow = tableGrid.children.item(y - 1);
+                const row = existingRow ?? document.createElement('div');
+                row.className = 'row';
+
+                for (let x = 1; x <= maxX; x++) {
+                    const table = tables.find(table => table.posX == x && table.posY == y);
+
+                    if (table == undefined) {
+                        const tableCell = document.createElement('div');
+                        tableCell.className = `col-md-4 table-cell table-space`;
+
+                        const existingTableCell = row.children.item(x - 1);
+                        if (existingTableCell != null) {
+                            row.replaceChild(tableCell, existingTableCell)
+                        } else {
+                            row.appendChild(tableCell);
+                        }
+                        continue;
+                    }
+
+                    const tableCell = document.createElement('div');
+                    tableCell.className = `col-md-4 table-cell table-${table.status} row`;
+                    tableCell.dataset.tableId = table.id;
+                    tableCell.dataset.status = table.status;
+                    tableCell.innerText = `Table ${table.id}`;
+
+                    if (table.orderStatus != null) {
+                        const tableOrderStatus = document.createElement('p');
+                        tableOrderStatus.innerText = `Order Status: ${table.orderStatus[0].toUpperCase() + table.orderStatus.slice(1)}`;
+                        tableCell.appendChild(tableOrderStatus);
+                    }
+
+                    if (table.orderPaid != null) {
+                        const tableOrderPaid = document.createElement('p');
+                        tableOrderPaid.innerText = `Order Paid: ${table.orderPaid}`;
+                        tableCell.appendChild(tableOrderPaid);
+                    }
+
+                    tableCell.addEventListener('click', handleTableCellClick);
+
+                    const existingTableCell = row.children.item(x - 1);
+                    if (existingTableCell != null) {
+                        row.replaceChild(tableCell, existingTableCell)
+                    } else {
+                        row.appendChild(tableCell);
+                    }
+                }
+
+                if (!existingRow) tableGrid.appendChild(row);
+            }
+        }
+
+        // Function to save table status
+        function saveTableStatus() {
+            // Variables for checkbox options
+            const selectedTable = $('#selectedTable').text();
+            const statusDirty = $('#statusDirty').is(':checked');
+            const statusOccupied = $('#statusOccupied').is(':checked');
+            const statusUnoccupied = $('#statusUnoccupied').is(':checked');
+
+            // Check selection and set new status
+            let status = '';
+            if (statusDirty) {
+                status = 'dirty';
+            } else if (statusOccupied) {
+                status = 'occupied';
+            } else if (statusUnoccupied) {
+                status = 'unoccupied';
+            }
+
+            // Update the table status
+            $(`.table-cell[data-table-id="${selectedTable}"]`).data('status', status);
+            $(`.table-cell[data-table-id="${selectedTable}"]`).removeClass('table-occupied table-unoccupied table-dirty');
+
+            // Add the corresponding class based on the updated status
+            if (status === 'occupied') {
+                $(`.table-cell[data-table-id="${selectedTable}"]`).addClass('table-occupied');
+            } else if (status === 'unoccupied') {
+                $(`.table-cell[data-table-id="${selectedTable}"]`).addClass('table-unoccupied');
+            } else if (status === 'dirty') {
+                $(`.table-cell[data-table-id="${selectedTable}"]`).addClass('table-dirty');
+            }
+
+            // Update the selected table status and close modal
+            $('#selectedTableStatus').text(status);
+            $('#updateStatusModal').modal('hide');
+        }
+
+        // Handle click event on table cells
+        async function handleTableCellClick(event) {
+            const tableId = event.target.dataset.tableId;
+            const status = event.target.dataset.status;
+
+            if (status === 'occupied') {
+                $('#orderTableId').text(tableId);
+                $('#orderStatus').text("Loading Order Status...");
+                $('#orderModal').modal('show');
+
+                const order = await (await fetch(window.location.origin + '/api/waitstaff/order?tableId=' + event.target.dataset.tableId, {
+                    method: 'GET'
+                })).json();
+
+                orderId = order.id;
+
+                $('#orderStatus').text("Order Status: " + (order.status.charAt(0).toUpperCase() + order.status.slice(1)));
+                $('#orderPrice').text("Order Price: $" + (order.items.reduce((sum, item)=> sum + item.count * menuItems[item.itemId].price, 0).toFixed(2)));
+                $('#orderPaid').text("Order Paid: " + (order.paid ? 'Yes' : order.paymentId == null ? 'No' : 'Cash Waiting'));
+            } else if (status === 'unoccupied') {
+                // Show the guest count modal
+                $('#guestCountTableId').text(tableId);
+                $('#guestCountModal').modal('show');
+            } else if (status === 'dirty') {
+                $('#finalBillTableId').text(tableId);
+                $('#finalBillModal').modal('show');
+            }
+        }
+
+        async function receivedCash() {
+            if (orderId == null) {
+                alert('Invalid Order!');
+                return;
+            }
+            let cashAmount = parseFloat($('#orderCashAmount').val());
+
+            await fetch(window.location.origin + '/api/waitstaff/order/cash', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    orderId: orderId,
+                    amount: cashAmount
+                }),
+            });
+
+            $('#orderModal').modal('hide');
+        }
+
+        async function deleteOrder() {
+            let response;
+            if (orderId != null) {
+                response = await fetch(window.location.origin + '/api/waitstaff/order', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId
+                    }),
+                });
+            }
+
+            const tableId = $('#orderTableId').text();
+            const tableCell = $(`.table-cell[data-table-id="${tableId}"]`);
+
+            if (orderId == null || !response.ok) {
+                await fetch(window.location.origin + '/api/waitstaff/table/status', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: tableId,
+                        status: 'dirty'
+                    }),
+                });
+            }
+
+            tableCell.attr('data-status', 'dirty');
+            tableCell.removeClass('table-occupied');
+            tableCell.addClass('table-dirty');
+            $('#selectedTableStatus').text('dirty');
+            $('#orderModal').modal('hide');
+        }
+
+        async function cleanTable() {
+            const tableId = $('#finalBillTableId').text();
+            const tableCell = $(`.table-cell[data-table-id="${tableId}"]`);
+
+            await fetch(window.location.origin + '/api/waitstaff/table/status', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: tableId,
+                    status: 'unoccupied'
+                }),
+            });
+
+            tableCell.attr('data-status', 'unoccupied');
+            tableCell.removeClass('table-dirty');
+            tableCell.addClass('table-unoccupied');
+            $('#selectedTableStatus').text('unoccupied');
+            $('#finalBillModal').modal('hide');
+        }
+
+        // Function to begin the order
+        async function beginOrder() {
+            const tableId = $('#guestCountTableId').text();
+            const guestCount = $('#guestCountInput').val();
+
+            try {
+                const response = await fetch('/api/waitstaff/order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ tableId })
+                })
+                if (response.ok) {
+                    var data = await response.json();
+                    orderId = data.id;
+                    updateIframe();
+                    // Update the table status to 'occupied'
+                    const tableCell = $(`.table-cell[data-table-id="${tableId}"]`);
+                    tableCell.attr('data-status', 'occupied');
+                    tableCell.removeClass('table-unoccupied');
+                    tableCell.addClass('table-occupied');
+
+                    // Show the QR code modal
+                    $('#qrCodeTableId').text(tableId);
+                    $('#qrCodeModal').modal('show');
+
+                    // Hide the guest count modal
+                    $('#guestCountModal').modal('hide');
+
+                } else {
+                    alert('Failed to begin the order!')
+                    let errorResponse = await response.json();
+                    errorResponse.status = response.status;
+                    console.error('Failed to begin the order!', errorResponse);
+                }
+            } catch (error) {
+                alert('Error starting order!')
+                console.error('Error starting order!', error);
+            }
+        }
+
+        // Function to skip QR code scan
+        function skipQR() {
+            const tableId = $('#qrCodeTableId').text();
+            // Redirect to the menu modal after a delay (simulated)
+            $('#menuTableId').text(tableId);
+            $('#menuModal').modal('show');
+            $('#qrCodeModal').modal('hide');
+
+        }
+
+
+        // Function to create a new table
+        function createNewTable() {
+            const seats = document.getElementById('seatsInput').value;
+            const posX = document.getElementById('posXInput').value;
+            const posY = document.getElementById('posYInput').value;
+
+            console.log("seats", seats);
+            console.log("posX", posX);
+            console.log("posy", posY);
+
+            const modal = document.getElementById('newTableModal');
+            if (!modal) {
+                console.log("Modal element  newTableModel not found");
+                return;
+            }
+
+            fetch('/api/management/table', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ seats, posX, posY })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the response data as needed
+                    console.log(data);
+                    // Close the modal
+                    $('#newTableModal').modal('hide');
+                })
+                .catch(error => {
+                    // Handle the error appropriately
+                    console.error(error);
+                });
+        }
+
+        // Handle QR code modal actions
+        function handleQRCodeModal() {
+            const qrCodeDiv = document.getElementById('qr-code-container');
+            qrCodeDiv.innerHTML = '';
+            new QRCode(qrCodeDiv, window.location.origin + '/menu/' + orderId);
+        }
+
+
+        $(document).ready(function () {
+            populateTables();
+            // Handle QR code modal actions
+            $('#qrCodeModal').on('shown.bs.modal', handleQRCodeModal);
+            // Add event listener to update status button
+            $('#updateStatusModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                var tableCell = button.closest('.table-cell');
+                if (tableCell) {
+                    var tableId = tableCell.data('table-id');
+                    var tableNumber = button.text().trim();
+                    var modal = $(this);
+
+                    // Set the table number in the modal
+                    var modalTableNumber = modal.find('.modal-title');
+                    modalTableNumber.text('Update Table Status: ' + tableNumber);
+
+                    // Set the selected table
+                    $('#selectedTable').text(tableId);
+
+                    // Show the modal
+                    modal.modal('show');
+                }
+            });
+
+            // Add event listener to modal submit button
+            $('#modalSubmitButton').click(function () {
+                saveTableStatus();
+            });
+
+            // Add click event listener to table cells
+            /*$('.table-cell').click(function () {
+                var tableId = $(this).data('table-id');
+                var status = $(this).data('status');
+                $('#selectedTable').text(tableId);
+                $('#selectedTableStatus').text(status);
+
+                if (status === 'occupied') {
+                    $('#orderTableId').text(tableId);
+                    $('#orderModal').modal('show');
+                } else if (status === 'unoccupied') {
+                    $('#qrCodeTableId').text(tableId);
+                    $('#qrCodeModal').modal('show');
+                } else if (status === 'dirty') {
+                    $('#finalBillTableId').text(tableId);
+                    $('#finalBillModal').modal('show');
+                }
+            });*/
+
+            setInterval(async () => {
+                try {
+                    await populateTables();
+                } catch (error) {
+                    console.error('Error occurred while polling table statuses: ', error);
+                }
+            }, 1000);
+        });
+
+        // Add event listener to "Create New Table" button
+        document.getElementById('createTableButton').addEventListener('click', function () {
+            console.log("Button Clicked!");
+            $('#newTableModal').modal('show');
+        });
+    </script>
+</body>
+
+</html>

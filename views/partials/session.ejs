@@ -1,0 +1,31 @@
+<script>
+    async function fetchSession() {
+        if (typeof session !== 'undefined') {
+            return session;
+        }
+
+        let success = false;
+
+        try {
+            const response = await fetch('/api/common/employee', {
+                method: 'GET',
+            });
+
+            if (response.ok) {
+                var session = await response.json();
+                success = true;
+                return session;
+            } else {
+                console.error('Failed to retrieve signed-in employee:', response.status);
+            }
+        } catch (error) {
+            console.error('Error retrieving signed-in employee:', error);
+        } finally {
+            if (!success) {
+                window.location.replace(window.location.origin);
+            }
+        }
+    }
+
+    var sessionPromise = fetchSession();
+</script>
