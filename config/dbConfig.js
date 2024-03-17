@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const getConnection = async () => {
+const connectDB = async () => {
   try {
     if (!process.env.MONGODB_URI) {
       throw new Error(
@@ -16,17 +16,10 @@ const getConnection = async () => {
   }
 };
 
-/* const mariadb = require('mariadb');
-const fs = require('fs');
-
-const dbConfig = JSON.parse(fs.readFileSync('./config/dbConfig.json'));
-
-const dbConnPool = mariadb.createPool(dbConfig);
-
-function getConnection() {
-     return dbConnPool;
+module.exports = connectDB;
+/*for a .json file:
+ {
+    "socketPath": "/var/run/mysqld/mysqld.sock",
+    "user": "digidiner-admin",
+    "database": "digidiner"
 } */
-
-module.exports = {
-  getConnection,
-};
