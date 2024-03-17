@@ -37,7 +37,7 @@
     "twilio": "^4.13.0"
   },
   "engines": {
-    "node": "18.x"
+    "node": "19.x"
   },
   "devDependencies": {
     "node-sass": "^9.0.0"
