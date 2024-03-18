@@ -16,7 +16,7 @@ var utils = require("./utils");
 var Employee = require("./models/employee");
 
 var sessionOptions = {
-  secret: process.env.SESSION_SECRET | "your-secret",
+  secret: process.env.SESSION_SECRET || "your-secret",
   resave: true,
   saveUninitialized: true,
   cookie: {
