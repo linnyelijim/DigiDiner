@@ -4,6 +4,7 @@
 <head>
 	<meta charset="UTF-8">
 	<title>DigiDiner</title>
+	<link rel="icon" href="data:;base64,iVBORw0KGgo=">
 	<link rel="stylesheet" href="/css/bootstrap.min.css">
 	<style>
 		body {
@@ -34,7 +35,8 @@
 								<input type="password" class="form-control" id="floatingPasswordSignIn"
 									placeholder="Password">
 								<label for="floatingPasswordSignIn">Password</label>
-								<span class="password-toggle" onclick="togglePasswordVisibility('floatingPasswordSignIn')">
+								<span class="password-toggle"
+									onclick="togglePasswordVisibility('floatingPasswordSignIn')">
 									<i class="bi bi-eye"></i></span>
 							</div>
 							<div class="checkbox mb-3">
@@ -208,7 +210,7 @@
 					console.error('Error during user creation:', error);
 				}
 			});
-			
+
 			// Function to check for an existing authentication token in local storage and use it if available
 			/*function checkRememberMe() {
 				const authToken = localStorage.getItem('authToken');

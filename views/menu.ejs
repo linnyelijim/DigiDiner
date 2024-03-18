@@ -1,70 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>DigiDiner</title>
-        <link rel="stylesheet" href="/css/bootstrap.min.css">
 
-        <style>
-            .nav-link {
-                font-size: 1.2rem;
-            }
+<head>
+    <meta charset="UTF-8">
+    <title>DigiDiner</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
 
-            .nav-link.active {
-                background-color: #e3f2fd;
-            }
+    <style>
+        .nav-link {
+            font-size: 1.2rem;
+        }
 
-            header {
-                box-shadow: 0 2px 4px rgba(84, 84, 84, 0.1);
-            }
+        .nav-link.active {
+            background-color: #e3f2fd;
+        }
 
-            footer {
-                background-color: #f8f9fa;
-                /* Solid color for the footer */
-                padding: 20px 0;
-                /* Adjust padding as needed */
-                color: #6c757d;
-                /* Text color */
-                text-align: center;
-            }
-        </style>
-    </head>
+        header {
+            box-shadow: 0 2px 4px rgba(84, 84, 84, 0.1);
+        }
 
-    <body>
-        <header class="px-3 py-4 text-bg-dark shadow">
-            <div class="container">
-                <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
-                    <div class="shadow p-3 rounded">
-                        <a href="/" class="d-flex align-items-center mb-2 mb-lg-0 text-white text-decoration-none">
-                            <img src="/images/logoCloseup.png" role="img" alt="LogoClose" width="100" height="84">
-                        </a>
-                    </div>
-                    <hr class="section-divider">
+        footer {
+            background-color: #f8f9fa;
+            /* Solid color for the footer */
+            padding: 20px 0;
+            /* Adjust padding as needed */
+            color: #6c757d;
+            /* Text color */
+            text-align: center;
+        }
+    </style>
+</head>
 
-                    <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" id="menuDropdown" role="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                Menu
-                            </a>
-                            <ul class="dropdown-menu shadow" aria-labelledby="menuDropdown">
-                                <li><a class="dropdown-item" href="#lunchMenuHeader">Lunch Menu</a></li>
-                                <li><a class="dropdown-item" href="#dinnerMenuHeader">Dinner Menu</a></li>
-                                <li><a class="dropdown-item" href="#drinkMenuHeader">Drink Menu</a></li>
-                            </ul>
-                        </li>
-                    </ul>
+<body>
+    <header class="px-3 py-4 text-bg-dark shadow">
+        <div class="container">
+            <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
+                <div class="shadow p-3 rounded">
+                    <a href="/" class="d-flex align-items-center mb-2 mb-lg-0 text-white text-decoration-none">
+                        <img src="/images/logoCloseup.png" role="img" alt="LogoClose" width="100" height="84">
+                    </a>
                 </div>
+                <hr class="section-divider">
+
+                <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+                    <li class="nav-item dropdown">
+                        <a href="#" class="nav-link dropdown-toggle" id="menuDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            Menu
+                        </a>
+                        <ul class="dropdown-menu shadow" aria-labelledby="menuDropdown">
+                            <li><a class="dropdown-item" href="#lunchMenuHeader">Lunch Menu</a></li>
+                            <li><a class="dropdown-item" href="#dinnerMenuHeader">Dinner Menu</a></li>
+                            <li><a class="dropdown-item" href="#drinkMenuHeader">Drink Menu</a></li>
+                        </ul>
+                    </li>
+                </ul>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <main>
-            <%- include('partials/menuOrder') %>
-        </main>
+    <main>
+        <%- include('partials/menuOrder') %>
+    </main>
 
-        <footer>
-            <%- include('partials/footer') %>
-        </footer>
-        <script src="/js/bootstrap.bundle.min.js"></script>
-    </body>
+    <footer>
+        <%- include('partials/footer') %>
+    </footer>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+</body>
+
 </html>

@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>DigiDiner</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <%- include('partials/session') %>
 </head>
@@ -32,10 +33,10 @@
                 <% if (activePeriod) { %>
                     <button id="clockBtn" class="btn btn-primary" type="button"
                         onclick="showConfirmationModal('clockOut')">Clock Out</button>
-                <% } else { %>
-                    <button id="clockBtn" class="btn btn-primary" type="button"
-                        onclick="showConfirmationModal('clockIn')">Clock In</button>
-                <% } %>
+                    <% } else { %>
+                        <button id="clockBtn" class="btn btn-primary" type="button"
+                            onclick="showConfirmationModal('clockIn')">Clock In</button>
+                        <% } %>
             </div>
 
             <div class="text-center mt-4">
@@ -69,7 +70,8 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="confirmationModalTitle"></h5>
-                        <button type="button" class="close" onclick="cancelAction()" data-dismiss="modal" aria-label="Close">
+                        <button type="button" class="close" onclick="cancelAction()" data-dismiss="modal"
+                            aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -79,7 +81,8 @@
                             </span>? This action cannot be undone.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" onclick="cancelAction()" data-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-secondary" onclick="cancelAction()"
+                            data-dismiss="modal">Cancel</button>
                         <button type="button" class="btn btn-primary" onclick="confirmAction()">Confirm</button>
                     </div>
                 </div>
@@ -95,7 +98,7 @@
         // Filter timestamps for the current week
         const dateObject = new Date(Date.now());
         dateObject.setDate(dateObject.getDate() - (dateObject.getDay() >= 1 ? dateObject.getDay() - 1 : 6 - dateObject.getDay()))
-        dateObject.setHours(0,0,0,0);
+        dateObject.setHours(0, 0, 0, 0);
 
         const startOfCurrentWeek = dateObject.getTime();
         const endOfCurrentWeek = startOfCurrentWeek + 7 * 24 * 60 * 60 * 1000 - 1;
@@ -124,7 +127,7 @@
             } else {
                 await clockOut();
             }
-            
+
             $('#confirmationModal').modal('hide');
         }
 

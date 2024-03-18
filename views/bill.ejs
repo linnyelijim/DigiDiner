@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Restaurant Bill</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <link rel="stylesheet" href="/css/bootstrap.min.css">
     <style>
         .bill {
@@ -43,67 +44,67 @@
 </head>
 
 <body>
-<header><%- include('partials/head') %>
-</header>
-<div class="container">
-    <div class="py-5 text-center">
-        <h2>Checkout</h2>
-        <h4></h4>Your order is being prepared.</h4>
-        <p class="lead">Below is a summary of your order. Please proceed with
-            payment at your convenience.</p>
-        <h6>We appreciate your patience and look forward to serving you a
-            delightful dining experience.</h6>
+    <header><%- include('partials/head') %>
+    </header>
+    <div class="container">
+        <div class="py-5 text-center">
+            <h2>Checkout</h2>
+            <h4></h4>Your order is being prepared.</h4>
+            <p class="lead">Below is a summary of your order. Please proceed with
+                payment at your convenience.</p>
+            <h6>We appreciate your patience and look forward to serving you a
+                delightful dining experience.</h6>
+        </div>
+        <h1>Restaurant Bill</h1>
+        <div class="bill">
+            <% if (orderItems.length> 0) { %>
+                <% orderItems.forEach(function(item) { %>
+                    <div class="bill-item">
+                        <h4>
+                            <%= menuItems[item.itemId].name %>
+                        </h4>
+                        <ul class="item-info">
+                            <li>Quantity: <%= item.count %>
+                            </li>
+                            <li>Cost: $<%= menuItems[item.itemId].price %>
+                            </li>
+                        </ul>
+                    </div>
+                    <% }) %>
+                        <div class="subtotal">
+                            Subtotal: $<%= subtotal.toFixed(2) %>
+                        </div>
+                        <div class="taxes">
+                            Taxes: $<%= taxes.toFixed(2) %>
+                        </div>
+                        <div class="total">
+                            Total: $<%= total.toFixed(2) %>
+                        </div>
+                        <% } else { %>
+                            <p>No items in the bill.</p>
+                            <% } %>
+        </div>
+        <button class="btn btn-success pay-bill-btn" onclick="payBill()">Pay Bill</button>
     </div>
-    <h1>Restaurant Bill</h1>
-    <div class="bill">
-        <% if (orderItems.length> 0) { %>
-            <% orderItems.forEach(function(item) { %>
-                <div class="bill-item">
-                    <h4>
-                        <%= menuItems[item.itemId].name %>
-                    </h4>
-                    <ul class="item-info">
-                        <li>Quantity: <%= item.count %>
-                        </li>
-                        <li>Cost: $<%= menuItems[item.itemId].price %>
-                        </li>
-                    </ul>
-                </div>
-            <% }) %>
-            <div class="subtotal">
-                Subtotal: $<%= subtotal.toFixed(2) %>
-            </div>
-            <div class="taxes">
-                Taxes: $<%= taxes.toFixed(2) %>
-            </div>
-            <div class="total">
-                Total: $<%= total.toFixed(2) %>
-            </div>
-        <% } else { %>
-            <p>No items in the bill.</p>
-        <% } %>
-    </div>
-    <button class="btn btn-success pay-bill-btn" onclick="payBill()">Pay Bill</button>
-</div>
-<footer>
-    <%- include('partials/footer') %>
-</footer>
-<script src="/js/jquery.min.js"></script>
-<script src="/js/bootstrap.bundle.min.js"></script>
-<script>
-    var orderItems = JSON.parse('<%- JSON.stringify(orderItems) %>')
+    <footer>
+        <%- include('partials/footer') %>
+    </footer>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script>
+        var orderItems = JSON.parse('<%- JSON.stringify(orderItems) %>')
 
-    function payBill() {
-        var total = <%= total %>;
-        var tip = parseFloat($('#tip').val());
-        if (tip < 0) {
-            tip = 0;
-            $('#tip').val('0')
+        function payBill() {
+            var total = <%= total %>;
+            var tip = parseFloat($('#tip').val());
+            if (tip < 0) {
+                tip = 0;
+                $('#tip').val('0')
+            }
+            total += tip;
+            window.location.href = '/payment/' + <%= order.id %>;
         }
-        total += tip;
-        window.location.href = '/payment/' + <%= order.id %>;
-    }
-</script>
+    </script>
 
 </body>
 
