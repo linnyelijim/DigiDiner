@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const connectDB = async () => {
+const getConnection = async () => {
   try {
     if (!process.env.MONGODB_URI) {
       throw new Error(
@@ -16,7 +16,9 @@ const connectDB = async () => {
   }
 };
 
-module.exports = connectDB;
+module.exports = {
+  getConnection,
+};
 /*for a .json file:
  {
     "socketPath": "/var/run/mysqld/mysqld.sock",
